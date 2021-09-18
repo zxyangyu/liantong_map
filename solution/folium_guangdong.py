@@ -1,16 +1,21 @@
-import folium
+import folium,random
 act='pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw'
-
+from faker import Faker
+fake = Faker()
 # 上海地图
-m = folium.Map(location=[31.22, 121.48],
+# m = folium.Map(location= [23.132191,113.266530],
+m = folium.Map(location= [22.55,114.05],
                tiles='https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/{z}/{x}/{y}?access_token='+act,
-               zoom_start=10,
+               zoom_start=14,
+                prefer_canvas=True,
                attr=r'Map data &copy; OpenStreetMap contributors, <a target="_blank" href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery Â© <a target="_blank" href="https://www.mapbox.com/" > Mapbox < / a > ',
-
 )
-folium.Circle(radius=1000, location=(31.22, 121.48), popup="用户id",
-                         color='black', fill=True, fill_color='green' ).add_to(m)
-m.save('index.html')
+for _ in range(500):
+    folium.Circle(radius=50, location=(fake.coordinate(center=22.55, radius=0.05) , fake.coordinate(center=114.05, radius=0.05)), popup="用户:{0}".format(fake.safe_email()),
+                         color='green',fill=True, fill_color='green').add_to(m)
+m.save('../output/index.html')
+
+
 
 def plot_map(self, all_data):
     plot_map = folium.Map(location=[all_data['lat'].mean(), all_data['lon'].mean()],

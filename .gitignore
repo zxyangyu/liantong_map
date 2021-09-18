@@ -1,1 +1,17 @@
 /data/
+/.idea/
+!.gitignore
+/geo_guangdong.html
+/geo_guangdong.py
+/geo_深圳.html
+/guangdong.js
+/hcharts.js
+/highcharts-map.html
+/index.html
+/map-HK.html
+/map-usa.html
+/map_guangdong.html
+/map_guangdong.py
+/map_shenzhen.html
+/pure.html
+/us.html
