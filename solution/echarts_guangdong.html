@@ -10,7 +10,7 @@
 
 
     <script>
-        function goBackProeMap() {
+        function goBackProMap() {
             $('#cont_pro_map').css('display', 'block');
             $('#cont_city_map').css('display', 'none');
             $('.retPro').css('display', 'none');
@@ -25,7 +25,7 @@
                 <p>地图总览</p>
             </div>
             <div class="retPro">
-                <a href="javascript:void(0);" onclick="goBackProeMap()">
+                <a href="javascript:void(0);" onclick="goBackProMap()">
                     返回省级地图
                 </a>
             </div>
@@ -238,6 +238,7 @@
                 {name: '武汉', value: 273},
                 {name: '大庆', value: 279}
             ];
+            var json_data
             var geoCoordMap = {
                 '海门': [121.15, 31.89],
                 '鄂尔多斯': [109.781327, 39.608266],
@@ -448,6 +449,19 @@
                 return res;
             };
 
+            var convertJson = function (data) {
+                var res = [];
+                for (var i = 0; i < data.length; i++) {
+                    res.push({
+                        name: data[i].imei,
+                        value: [data[i].lng, data[i].lat]
+                    });
+
+                }
+                console.log(res);
+                return res;
+            };
+
 
             chart.setOption({
                 tooltip: {
@@ -479,53 +493,64 @@
                     textAlign: 'left'
                 },
                 series: [{
-                        type: 'map',
-                        map: 'guang_zhou',//要和echarts.registerMap（）中第一个参数一致
-                        scaleLimit: {min: 0.8, max: 1.9},//缩放
-                        zoom: 1, //当前视角的缩放比例
-                        roam: true, //是否开启平游或缩放
+                    type: 'map',
+                    map: 'guang_zhou',//要和echarts.registerMap（）中第一个参数一致
+                    scaleLimit: {min: 0.8, max: 1.9},//缩放
+                    zoom: 1, //当前视角的缩放比例
+                    roam: true, //是否开启平游或缩放
 
-                        mapLocation: {
-                            y: 60
+                    mapLocation: {
+                        y: 60
+                    },
+                    itemSytle: {
+                        emphasis: {label: {show: false}}
+                    },
+                    label: {
+                        normal: {
+                            show: true
                         },
-                        itemSytle: {
-                            emphasis: {label: {show: false}}
-                        },
-                        label: {
-                            normal: {
-                                show: true
-                            },
-                            emphasis: {
-                                show: true
-                            }
-                        },
-                        data: [
-                            {name: '深圳市', value: '99'},
-                            {name: '惠州市', value: '20'},
-                            {name: '汕头市', value: '10'},
-                            {name: '汕尾市', value: '30'},
-                            {name: '揭阳市', value: '50'},
-                            {name: '肇庆市', value: '15'},
-                            {name: '广州市', value: '33'},
-                        ]//dataParam//人口数据：例如[{name:'济南',value:'100万'},{name:'菏泽'，value:'100万'}......]
-                    }
+                        emphasis: {
+                            show: true
+                        }
+                    },
+                    data: [
+                        {name: '深圳市', value: '99'},
+                        {name: '惠州市', value: '20'},
+                        {name: '汕头市', value: '10'},
+                        {name: '汕尾市', value: '30'},
+                        {name: '揭阳市', value: '50'},
+                        {name: '肇庆市', value: '15'},
+                        {name: '广州市', value: '33'},
+                    ]//dataParam//人口数据：例如[{name:'济南',value:'100万'},{name:'菏泽'，value:'100万'}......]
+                }
                 ]
             })
 
 
             chart.on('click', function (result) {//回调函数，点击时触发，参数params格式参加官方API
+                // loading 动画
+                // chart.showLoading({
+                //     text: 'loading',
+                //     color: '#c23531',
+                //     textColor: '#000',
+                //     maskColor: 'rgba(255, 255, 255, 0.2)',
+                //     zlevel: 0,
+                // });
                 setTimeout(function () {
                     $('#cont_pro_map').css('display', 'none');
                     $('#cont_city_map').css('display', 'block');
                     $('.retPro').css('display', 'block');
+                    // chart.hideLoading();
                 }, 500);
                 //选择地级市的单击事件
                 var selectCity = result.name;
                 //alert(selectCity);
                 //    调取后台数据
+
                 $.get(cdn_url + selectCity + '.json', function (Citymap) {
                     echarts.registerMap(selectCity, Citymap);
                     var myChartCity = echarts.init(document.getElementById('cont_city_map'));
+                    // $.get('../data/result_json_20210830.json').done(function (data) {
                     myChartCity.setOption({
                         geo: {
                             map: selectCity,
@@ -580,55 +605,50 @@
                                 return result.name + '<br />活跃人数:' + result.value;
                             }
                         },
-                        dataRange: {
-                            min: 0,
-                            max: 50,
-                            text: ['高', '低'],
-                            realtime: false,
-                            calculable: false,
-                            splitNumber: 0,
-                            itemWidth: 10,
-                            itemHeight: 60,
-                            color: ['lightskyblue', '#f2f2f2']
-                        },
                         title: {
                             text: selectCity + '地图数据总览',
-                            //subtext:'',
                             x: 'center',
                             y: 'top',
                             textAlign: 'left'
                         },
-                        series: [{
-                            name: 'pm2.5',            // series名称
-                            type: 'scatter',          // series图表类型
-                            coordinateSystem: 'geo',  // series坐标系类型
-                            data: [{name: "shenzhen", value: [114.07, 22.62, 199]}],  // series数据内容
-                            //控制显示文本
-                            label: {
-                                normal: {
-                                    show: false
-                                },
-                                emphasis: {
-                                    show: true
-                                }
-                            },
-                            //series样式
-                            itemStyle: {
-                                normal: {
-                                    color: '#ddb926'
-                                }
-                            }
-                        }
-                        ]
-                    })
-                    myChartCity.on('click', function (rel) {
-                        setTimeout(function () {
-                            //$('#cont_pro_map').css('display','block');
-                            //$('#cont_city_map').css('display','none');
-                        }, 500);
+                        // 填入数据
 
-                    })
+                    });
+                    $.get('../data/result_json_20210830.json').done(function (data) {
+                        myChartCity.setOption({
+                            series: [{
+                                name: 'shanshan',            // series名称
+                                type: 'scatter',          // series图表类型
+                                coordinateSystem: 'geo',  // series坐标系类型
+                                blendMode: 'lighter',   // 叠加效果
+                                symbolSize: 100,
+                                // data: convertJson(json_data),  // series数据内容
+                                data: convertJson(data),  // series数据内容
+                                //控制显示文本
+                                label: {
+                                    normal: {
+                                        show: false
+                                    },
+                                    emphasis: {
+                                        show: true
+                                    }
+                                },
+                                //series样式
+                                itemStyle: {
+                                    color: 'orange',
+                                    opacity: 0.3,
+                                },
+                            }
+                            ]
+                        })
+                    });
                 });
+                // myChartCity.on('click', function (rel) {
+                //     setTimeout(function () {
+                //         //$('#cont_pro_map').css('display','block');
+                //         //$('#cont_city_map').css('display','none');
+                //     }, 500);
+                // })
             });
         });
     })
