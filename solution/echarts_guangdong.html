@@ -42,17 +42,64 @@
 <script>
     $().ready(function () {
         /*echarts*/
+        var ali_map = 'https://geo.datav.aliyun.com/areas_v3/bound/'
         var cdn_url = 'https://cdn.jsdelivr.net/gh/zxyangyu/liantong_map/city_geo/'
         $.get(cdn_url + '440000_full.json', function (mapJson) {
             echarts.registerMap('guang_zhou', mapJson);
             var chart = echarts.init(document.getElementById('cont_pro_map'));//在id为mainMap的dom元素中显示地图
             var myChartCity
             var json_data
+            var code_city_dict = {
+                'CN-44-53': '云浮市',
+                'CN-44-52': '揭阳市',
+                'CN-44-51': '潮州市',
+                'CN-44-20': '中山市',
+                'CN-44-19': '东莞市',
+                'CN-44-18': '清远市',
+                'CN-44-17': '阳江市',
+                'CN-44-16': '河源市',
+                'CN-44-15': '汕尾市',
+                'CN-44-14': '梅州市',
+                'CN-44-13': '惠州市',
+                'CN-44-12': '肇庆市',
+                'CN-44-09': '茂名市',
+                'CN-44-08': '湛江市',
+                'CN-44-07': '江门市',
+                'CN-44-06': '佛山市',
+                'CN-44-05': '汕头市',
+                'CN-44-04': '珠海市',
+                'CN-44-03': '深圳市',
+                'CN-44-02': '韶关市',
+                'CN-44-01': '广州市'
+            }
+            var city_code_dict = {
+                '云浮市': '445300',
+                '揭阳市': '445200',
+                '潮州市': '445100',
+                '中山市': '442000',
+                '东莞市': '441900',
+                '清远市': '441800',
+                '阳江市': '441700',
+                '河源市': '441600',
+                '汕尾市': '441500',
+                '梅州市': '441400',
+                '惠州市': '441300',
+                '肇庆市': '441200',
+                '茂名市': '440900',
+                '湛江市': '440800',
+                '江门市': '440700',
+                '佛山市': '440600',
+                '汕头市': '440500',
+                '珠海市': '440400',
+                '深圳市': '440300',
+                '韶关市': '440200',
+                '广州市': '440100'
+            }
 
-            var convertJson = function (data) {
+            var convertJson = function (data,city_cn) {
                 var res = [];
                 for (var i = 0; i < data.length; i++) {
-                    if (data[i].city === 'CN-44-03') {
+                    if (code_city_dict[data[i].city] === city_cn) {
                         res.push({
                             name: data[i].imei,
                             value: [data[i].lng, data[i].lat]
@@ -138,9 +185,9 @@
                 //     zlevel: 0,
                 // });
                 // 清空实例重新渲染
-               if (myChartCity){
-                        myChartCity.dispose()
-                    }
+                if (myChartCity) {
+                    myChartCity.dispose()
+                }
                 setTimeout(function () {
                     $('#cont_pro_map').css('display', 'none');
                     $('#cont_city_map').css('display', 'block');
@@ -153,7 +200,7 @@
                 //alert(selectCity);
                 //    调取后台数据
 
-                $.get(cdn_url + selectCity + '.json', function (Citymap) {
+                $.get(cdn_url + city_code_dict[selectCity] + '_full.json', function (Citymap) {
                     echarts.registerMap(selectCity, Citymap);
                     myChartCity = echarts.init(document.getElementById('cont_city_map'));
                     // $.get('../data/result_json_20210830.json').done(function (data) {
@@ -211,7 +258,7 @@
                                 //Scatter才有这个属性,是否开启鼠标 hover 的提示动画效果
                                 hoverAnimation: false,
                                 // data: convertJson(json_data),  // series数据内容
-                                data: convertJson(data),  // series数据内容
+                                data: convertJson(data,selectCity),  // series数据内容
                                 //控制显示文本
                                 label: {
                                     show: false
