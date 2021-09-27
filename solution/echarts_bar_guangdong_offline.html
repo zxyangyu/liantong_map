@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=9; IE=8; IE=7; IE=EDGE"/>
+    <!--    <link rel="stylesheet" href="css/index.css" />-->
+    <!--    <script type="text/javascript" src="Plugins/jquery-easyui/jquery.min.js"></script>-->
+    <script type="text/javascript" src="static/js/echarts.min.js"></script>
+    <script type="text/javascript" src="static/js/jquery.min.js"></script>
+    <script type="text/javascript" src="static/data/result_agg.json"></script>
+</head>
+<body>
+<div id="main" style="width: 100%;height:800px;"></div>
+<script>
+    $().ready(function () {
+        var chart = echarts.init(document.getElementById('main'));
+        // 处理x轴数据function
+        // 处理value 数据function
+        console.log(result_agg)
+        var x_city = []
+        // 处理json文件
+        var city_values = []
+        result_agg.sort(function (a, b) {
+            return a.flowsize - b.flowsize  //b-a为降序
+        })
+        for (var i = 0; i < result_agg.length; i++) {
+            if (result_agg[i].zone_name === null) {
+                x_city.push(result_agg[i].city)
+                city_values.push(result_agg[i].flowsize / 1024 / 1024 / 1024 / 8)
+            }
+        }
+        chart.getZr().on('click', function (params) {
+                const pointInPixel = [params.offsetX, params.offsetY];
+                if (chart.containPixel('grid', pointInPixel)) {
+                    let xIndex = chart.convertFromPixel({seriesIndex: 0}, [params.offsetX, params.offsetY])[0];
+                    var xAxisName = chart.getOption().xAxis[0].data[xIndex]
+                    // 按照点击结果过滤数据
+                    var x_zone = []
+                    var values = []
+                    if (x_city.includes(xAxisName)) {
+                        for (var i = 0; i < result_agg.length; i++) {
+                            if (result_agg[i].city === xAxisName) {
+                                if (result_agg[i].zone_name != null) {
+                                    x_zone.push(result_agg[i].zone_name)
+                                    values.push(result_agg[i].flowsize / 1024 / 1024 / 1024 / 8)
+                                }
+                            }
+                        }
+                        renderData(x_zone, values, 'zone');
+                    }
+                }
+            }
+        )
+        var option = {
+            yAxis: {
+                type: 'value',
+                name: '流量',
+            },
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'shadow',
+                    label: {
+                        show: true
+                    }
+                }
+            },
+            toolbox: {
+                show: true,
+                orient: 'vertical',
+                top: 'center',
+                itemSize: 25,
+                feature: {
+                    mark: {show: true},
+                    dataView: {show: true, readOnly: false},
+                    restore: {show: true},
+                    saveAsImage: {show: true}
+                }
+            },
+            dataZoom: [
+                {
+                    show: true,
+                    start: 0,
+                    end: 100,
+                    type: 'inside',
+                },
+                {
+                    show: true,
+                    start: 0,
+                    end: 100,
+                    type: 'slider',
+                },
+                {
+                    show: true,
+                    yAxisIndex: 0,
+                    filterMode: 'empty',
+                    width: 30,
+                    showDataShadow: false,
+                    left: '93%'
+                }
+            ],
+            animationDuration: 1000,
+            animationEasing: 'cubicOut',
+            animationDurationUpdate: 1000
+        };
+
+        function renderData(x, values, type) {
+            option.xAxis = {
+                type: 'category',
+                data: x
+            }
+            option.series = [{
+                type: 'bar',
+                data: values
+            }]
+            chart.setOption(option);
+        }
+        renderData(x_city, city_values, 'city');
+
+    })
+</script>
+</body>
+</html>
