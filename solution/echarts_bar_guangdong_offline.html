@@ -7,10 +7,23 @@
     <!--    <script type="text/javascript" src="Plugins/jquery-easyui/jquery.min.js"></script>-->
     <script type="text/javascript" src="static/js/echarts.min.js"></script>
     <script type="text/javascript" src="static/js/jquery.min.js"></script>
+    <script>
+        var result_agg
+        function result(data) {
+            result_agg = data
+        }
+    </script>
     <script type="text/javascript" src="static/data/result_agg.json"></script>
 </head>
-<body>
-<div id="main" style="width: 100%;height:800px;"></div>
+<style>
+    ::-webkit-scrollbar {
+        display: none; /* Chrome Safari */
+    }
+</style>
+<body style="margin: 0;padding: 0;
+/*overflow-x:hidden; overflow-y:hidden;*/
+">
+<div id="main" style="width: 100%;height:700px;"></div>
 <script>
     $().ready(function () {
         var chart = echarts.init(document.getElementById('main'));
@@ -40,7 +53,7 @@
                     if (x_city.includes(xAxisName)) {
                         for (var i = 0; i < result_agg.length; i++) {
                             if (result_agg[i].city === xAxisName) {
-                                if (result_agg[i].zone_name != null) {
+                                if (result_agg[i].zone_name !== null) {
                                     x_zone.push(result_agg[i].zone_name)
                                     values.push(result_agg[i].flowsize / 1024 / 1024 / 1024 / 8)
                                 }
@@ -54,10 +67,11 @@
         var option = {
             yAxis: {
                 type: 'value',
-                name: '流量',
+                name: '流量(GB)',
             },
             tooltip: {
                 trigger: 'axis',
+                formatter: '{b0} <br /> 消耗流量: {c0} GB',
                 axisPointer: {
                     type: 'shadow',
                     label: {
@@ -80,13 +94,13 @@
             dataZoom: [
                 {
                     show: true,
-                    start: 0,
+                    start: 80,
                     end: 100,
                     type: 'inside',
                 },
                 {
                     show: true,
-                    start: 0,
+                    start: 80,
                     end: 100,
                     type: 'slider',
                 },
@@ -115,6 +129,7 @@
             }]
             chart.setOption(option);
         }
+
         renderData(x_city, city_values, 'city');
 
     })

@@ -435,10 +435,15 @@ point_df['city']=point_df.city.map(code_city_dict)
 
 # 展示数据详情
 print((point_df['zone_name']=='未知').sum())
-point_df.to_csv('../data/result.csv',index=False)
-point_df.to_json('../data/result.json',orient="records")
+point_df.to_csv('static/data/result.csv',index=False)
+# point_df.to_json('static/data/result.json',orient="records")
 agg_df1=point_df.groupby(["city","zone_name"]).agg({"flowsize": np.sum,"ucc_count": np.sum, "zone_adcode": np.size}).reset_index()
 agg_df2=point_df.groupby(["city"]).agg({"flowsize": np.sum,"ucc_count": np.sum, "zone_adcode": np.size}).reset_index()
-agg_df=pd.concat([agg_df1,agg_df2])
-agg_df.to_csv('../data/result_agg.csv')
-agg_df.to_json('../data/result_agg.json',orient="records")
+attach = pd.read_json('../data/attach.json')
+agg_df=pd.concat([agg_df1,agg_df2,attach])
+agg_df.to_csv('static/data/result_agg.csv')
+# agg_df.to_json('static/data/result_agg.json',orient="records")
+with open('static/data/result.json','w+') as f:
+    f.write('result('+point_df.to_json(orient="records")+')')
+with open('static/data/result_agg.json','w+') as f:
+    f.write('result('+agg_df.to_json(orient="records")+')')
