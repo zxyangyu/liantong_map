@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=9; IE=8; IE=7; IE=EDGE"/>
+    <!--    <link rel="stylesheet" href="css/index.css" />-->
+    <!--    <script type="text/javascript" src="Plugins/jquery-easyui/jquery.min.js"></script>-->
+    <script type="text/javascript" src="static/js/echarts.min.js"></script>
+    <script type="text/javascript" src="static/js/jquery.min.js"></script>
+
+</head>
+<style>
+    ::-webkit-scrollbar {
+        display: none; /* Chrome Safari */
+    }
+</style>
+<body style="margin: 0;padding: 0;
+/*overflow-x:hidden; overflow-y:hidden;*/
+">
+<div id="main" style="width: 100%;height:900px;color: #333;z-index: 1;margin: 0;padding: 0;"></div>
+<div id="city" style="width: 100%;height:900px;color: #333;z-index: 99;display: None;margin: 0;padding: 0;"></div>
+<div class="map-table" style="
+    position:absolute;/*子盒子位置要用absolute*/
+    top: 60px;
+    left: 60px;
+    color:#fff;
+    background-color: rgba(256,256,256,0.1);
+z-index:100">
+    <table>
+        <thead>
+        <tr>
+            <th>地区(TOP8)</th>
+            <th>客诉数</th>
+        </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+</body>
+<script>
+    $().ready(function () {
+        /*echarts*/
+
+        // 异步添加本地json
+        function jsonp(url, options) {
+            // 超时处理
+            let timeout = options.timeout;
+            return new Promise((resolve, reject) => {
+                // 防止函数名冲突
+                //   let funcName = `jsonp${Date.now()}`;
+                let funcName = options.callback;
+                let time = null, scriptNode;
+                // 定义callback
+                window[funcName] = function (data) {
+                    if (timeout) clearTimeout(time);
+                    resolve(data);
+                    // 很重要的性能优化点
+                    // 清除本次请求产生的回调函数和script标签
+                    delete window[funcName];
+                    document.body.removeChild(scriptNode);
+                }
+                // 创建script标签
+                scriptNode = document.createElement('script');
+                // 给script标签添加src属性
+                scriptNode.src = `${url}?callback=${funcName}`;
+                // 发出请求
+                document.body.appendChild(scriptNode);
+                time = setTimeout(() => {
+                    reject(url + '获取数据超时')
+                }, timeout)
+                // 失败
+                scriptNode.onerror = function (err) {
+                    reject(err);
+                }
+            })
+        }
+
+        // 创建数据表
+        function tableList(data) {
+            var appendHTML = "";
+            var table = $(".map-table tbody tr")
+            if (table.length > 0) {
+                table.remove();
+            }
+            for (var i = 0; i < data.length && i < 8; i++) {
+                if (data[i].value !== 0) {
+                    appendHTML = "<tr><td>" +
+                        data[i].name + "</td><td>" +
+                        data[i].value + "</td></tr>";
+                    $(".map-table tbody").append(appendHTML);
+                }
+            }
+        }
+
+        var ali_map = 'https://geo.datav.aliyun.com/areas_v3/bound/'
+        var cdn_url = 'https://cdn.jsdelivr.net/gh/zxyangyu/liantong_map/city_geo/'
+        jsonp('static/map/440000_full.json', {timeout: 10000, callback: 'map'}).then(mapJson => {
+            jsonp('static/data/result.json', {timeout: 10000, callback: 'result'}).then(points => {
+                jsonp('static/data/result_agg.json', {timeout: 10000, callback: 'result'}).then(agg => {
+                    // $.get(cdn_url + '440000_full.json', function (mapJson) {
+                    //     $.get('../data/result.json').done(function (points) {
+                    //         $.get('../data/result_agg.json').done(function (agg) {
+                    echarts.registerMap('guang_dong', mapJson);
+                    var chart = echarts.init(document.getElementById('main'));//在id为mainMap的dom元素中显示地图
+                    var myChartCity
+                    var code_city_dict = {
+                        'CN-44-53': '云浮市',
+                        'CN-44-52': '揭阳市',
+                        'CN-44-51': '潮州市',
+                        'CN-44-20': '中山市',
+                        'CN-44-19': '东莞市',
+                        'CN-44-18': '清远市',
+                        'CN-44-17': '阳江市',
+                        'CN-44-16': '河源市',
+                        'CN-44-15': '汕尾市',
+                        'CN-44-14': '梅州市',
+                        'CN-44-13': '惠州市',
+                        'CN-44-12': '肇庆市',
+                        'CN-44-09': '茂名市',
+                        'CN-44-08': '湛江市',
+                        'CN-44-07': '江门市',
+                        'CN-44-06': '佛山市',
+                        'CN-44-05': '汕头市',
+                        'CN-44-04': '珠海市',
+                        'CN-44-03': '深圳市',
+                        'CN-44-02': '韶关市',
+                        'CN-44-01': '广州市'
+                    }
+                    var city_code_dict = {
+                        '云浮市': '445300',
+                        '揭阳市': '445200',
+                        '潮州市': '445100',
+                        '中山市': '442000',
+                        '东莞市': '441900',
+                        '清远市': '441800',
+                        '阳江市': '441700',
+                        '河源市': '441600',
+                        '汕尾市': '441500',
+                        '梅州市': '441400',
+                        '惠州市': '441300',
+                        '肇庆市': '441200',
+                        '茂名市': '440900',
+                        '湛江市': '440800',
+                        '江门市': '440700',
+                        '佛山市': '440600',
+                        '汕头市': '440500',
+                        '珠海市': '440400',
+                        '深圳市': '440300',
+                        '韶关市': '440200',
+                        '广州市': '440100'
+                    }
+                    // 数据排序
+                    agg.sort(function (a, b) {
+                        return b.ucc_count - a.ucc_count
+                    })
+                    var convertJson = function (data, city) {
+                        var res = [];
+                        for (var i = 0; i < data.length; i++) {
+                            if (data[i].city === city) {
+                                if (data[i].ucc_count !== 0) {
+                                    res.push({
+                                        name: data[i].imei,
+                                        value: [data[i].lng, data[i].lat]
+                                    });
+                                }
+                            }
+                        }
+                    console.log(res);
+                    return res;
+                };
+                var convertAgg = function (data, type_column, select_city) {
+                    var res = [];
+                    if (select_city === "all") {
+                        for (var i = 0; i < data.length; i++) {
+                            if (data[i].zone_name === null) {
+                                res.push({
+                                    name: data[i].city,
+                                    value: data[i][type_column]
+                                });
+                            }
+                        }
+                    } else {
+                        for (var i = 0; i < data.length; i++) {
+                            if (data[i].zone_name !== null && data[i].city === select_city) {
+                                res.push({
+                                    name: data[i].zone_name,
+                                    value: data[i][type_column]
+                                });
+                            }
+                        }
+                    }
+                    return res;
+                };
+
+                // 创建表格
+                tableList(convertAgg(agg, "ucc_count", 'all'))
+
+                chart.setOption({
+                    backgroundColor: '#222831',
+                    tooltip: {
+                        trigger: 'item',
+                        formatter: function loadData(result) {
+                            return result.name + '<br />客诉数:' + result.value;
+                        }
+                    },
+                    visualMap: {
+                        type: 'continuous',
+                        min: 0,
+                        max: 5,
+                        splitNumber: 0,
+                        text: ['高', '低'],
+                        calculable: false,
+                        selectedMode: false,
+                        realtime: false,
+                        itemWidth: 10,
+                        itemHeight: 60,
+                        inRange: {
+                            color: ['#04847e', '#00a79f', '#03ded7',],
+                            symbolSize: [200, 400],
+                        },
+                    },
+                    title: {
+                        text: '广东省各市区数据总览',
+                        x: 'center',
+                        y: 'top',
+                        textAlign: 'left',
+                        textStyle: {
+                            color: '#fff',
+                            fontSize: 25,
+                            // fontWeight: 'normal',
+                            fontFamily: "Microsoft YaHei"
+                        },
+                    },
+
+                    series: [{
+                        type: 'map',
+                        map: 'guang_dong',//要和echarts.registerMap（）中第一个参数一致
+                        zoom: 1, //当前视角的缩放比例
+                        roam: false, //是否开启平游或缩放,
+                        top: 100,
+                        left: 'center',
+                        itemStyle: {
+                            borderColor: '#EEEEEE',
+                            borderWidth: 1,
+                            areaColor: '#575f6c',
+                        },
+                        label: {
+                            normal: {
+                                show: true,
+                                color: '#fff',
+                                fontSize: 14,
+                                fontFamily: "Microsoft YaHei",
+                                formatter: function (params) {
+                                    return params.name + "\n" + params.value;    //地图上展示文字 + 数值
+                                },
+                            },
+                            emphasis: {
+                                fontSize: 14,
+                                fontFamily: "Microsoft YaHei",
+                                show: true,
+                                color: '#fff',
+                            }
+                        },
+                        data: convertAgg(agg, "ucc_count", "all")
+                    }]
+                })
+
+                chart.on('click', function (result) {//回调函数，点击时触发，参数params格式参加官方API
+                    $('#city').css('display', 'block');
+                    $('#main').css('display', 'None');
+
+                    // 清空实例重新渲染
+                    if (myChartCity) {
+                        myChartCity.dispose();
+                    }
+                    //选择地级市的单击事件
+                    var selectCity = result.name;
+                    tableList(convertAgg(agg, "ucc_count", selectCity))
+
+                    //    调取后台数据
+                    // $.get(cdn_url + + '_full.json', function (Citymap) {
+                    jsonp('static/map/' + city_code_dict[selectCity] + '_full.json', {
+                        timeout: 10000,
+                        callback: 'map'
+                    })
+                        .then(Citymap => {
+                            echarts.registerMap(selectCity, Citymap);
+                            myChartCity = echarts.init(document.getElementById('city'));
+                            myChartCity.setOption({
+                                animation: false,
+                                backgroundColor: {
+                                    type: 'radial',
+                                    x: 0.5,
+                                    y: 0.5,
+                                    r: 0.5,
+                                    colorStops: [{
+                                        offset: 0, color: '#054074' // 0% 处的颜色
+                                    }, {
+                                        // offset: 1, color: '#00064c' // 100% 处的颜色
+                                        offset: 1, color: '#04294b' // 100% 处的颜色
+                                    }],
+                                },
+                                geo: {
+                                    show: false,
+                                    map: selectCity,
+                                    roam: false,
+                                },
+                                toolbox: {
+                                    show: true,
+                                    orient: 'vertical',
+                                    left: 'left',
+                                    top: 'center',
+                                    itemSize: 25,
+                                    feature: {
+                                        saveAsImage: {},
+                                        myTool: {
+                                            show: true,
+                                            title: '返回广东省',
+                                            icon: 'path://M512 53.333333c253.312 0 458.666667 205.354667 458.666667 458.666667S765.312 970.666667 512 970.666667 53.333333 765.312 53.333333 512 258.688 53.333333 512 53.333333z m199.296 217.770667L409.6 391.786667a32 32 0 0 0-17.813333 17.813333l-120.682667 301.696c-10.453333 26.133333 15.466667 52.053333 41.6 41.6L614.4 632.213333a32 32 0 0 0 17.813333-17.813333l120.682667-301.696c10.453333-26.133333-15.466667-52.053333-41.6-41.6z m-229.461333 210.730667a42.666667 42.666667 0 1 1 60.330666 60.330666 42.666667 42.666667 0 0 1-60.330666-60.330666z',
+                                            onclick: function () {
+                                                $('#city').css('display', 'None');
+                                                $('#main').css('display', 'block');
+                                                tableList(convertAgg(agg, "ucc_count", 'all'))
+                                            }
+                                        },
+                                    },
+                                },
+                                tooltip: {
+                                    trigger: 'item',
+                                    formatter: function loadData(result) {
+                                        return result.name + '<br />客诉数:' + result.value;
+                                    }
+                                },
+                                title: {
+                                    text: selectCity + '地图数据总览',
+                                    x: 'center',
+                                    y: 'top',
+                                    textAlign: 'left',
+                                    textStyle: {
+                                        color: '#fff',
+                                        fontSize: 25,
+                                        // fontWeight: 'normal',
+                                        fontFamily: "Microsoft YaHei"
+                                    },
+                                },
+                                series: [
+                                    {
+                                        type: 'map',
+                                        map: selectCity,//要和echarts.registerMap（）中第一个参数一致
+                                        zoom: 1, //当前视角的缩放比例
+                                        roam: false, //是否开启平游或缩放
+                                        data: convertAgg(agg, "ucc_count", selectCity),
+                                        itemStyle: {
+                                            normal: {
+                                                areaColor: '#000221',
+                                                borderColor: '#656565',
+                                            }
+                                        },
+                                        label: {
+                                            normal: {
+                                                textBorderColor: '#000000',
+                                                textBorderWidth: 3,
+                                                show: true,
+                                                color: '#ffffff',
+                                                fontSize: 16,
+                                                fontFamily: "Microsoft YaHei",
+                                                formatter: function (params) {
+                                                    return params.name + "\n" + params.value;    //地图上展示文字 + 数值
+                                                },
+                                            },
+                                            emphasis: {
+                                                show: false,
+                                            },
+                                        },
+                                    },
+                                    {
+                                        name: 'shanshan',            // series名称
+                                        type: 'scatter',          // series图表类型
+                                        // large: true,
+                                        zlevel: 99999,
+                                        // progressive :400,
+                                        silent: true,            // 不响应鼠标事件
+                                        coordinateSystem: 'geo',  // series坐标系类型
+                                        // blendMode: 'lighter',   // 叠加效果
+                                        blendMode: 'lighten',   // 叠加效果
+                                        symbolSize: 5,
+                                        //Scatter才有这个属性,是否开启鼠标 hover 的提示动画效果
+                                        hoverAnimation: false,
+                                        // data: convertJson(json_data),  // series数据内容
+                                        data: convertJson(points, selectCity),  // series数据内容
+                                        //控制显示文本
+                                        label: {
+                                            show: false
+                                        },
+                                        // series样式
+                                        itemStyle: {
+                                            color: 'white',
+                                            opacity: 0.9,
+                                            shadowBlur: 15,
+                                            shadowColor: '#ffffff'
+                                        },
+                                        // itemStyle: {
+                                        //     symbol: "data:image/svg+xml,%3Csvg width='6' height='6' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'%3E%3Cdefs%3E%3Cfilter x='-150%25' y='-150%25' width='400%25' height='400%25' filterUnits='objectBoundingBox' id='a'%3E%3CfeOffset in='SourceAlpha' result='shadowOffsetOuter1'/%3E%3CfeGaussianBlur stdDeviation='1' in='shadowOffsetOuter1' result='shadowBlurOuter1'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0.692934783 0 0 0 0 1 0 0 0 1 0' in='shadowBlurOuter1' result='shadowMatrixOuter1'/%3E%3CfeOffset in='SourceAlpha' result='shadowOffsetOuter2'/%3E%3CfeGaussianBlur stdDeviation='1' in='shadowOffsetOuter2' result='shadowBlurOuter2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0.694117647 0 0 0 0 1 0 0 0 1 0' in='shadowBlurOuter2' result='shadowMatrixOuter2'/%3E%3CfeMerge%3E%3CfeMergeNode in='shadowMatrixOuter1'/%3E%3CfeMergeNode in='shadowMatrixOuter2'/%3E%3C/feMerge%3E%3C/filter%3E%3Ccircle id='b' cx='3' cy='3' r='1'/%3E%3C/defs%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cuse fill='%23000' filter='url(%23a)' xlink:href='%23b'/%3E%3Cuse fill='%23FFF' xlink:href='%23b'/%3E%3C/g%3E%3C/svg%3E",
+                                        // },
+                                        tooltip: {
+                                            trigger: 'item',
+                                            show: false
+                                        },
+                                    }
+                                ]
+                            }, true);
+                        })
+                });
+
+            }).catch(err => {
+                alert(err)
+            })
+        }).catch(err => {
+            alert(err)
+        })
+    })
+    })
+    ;
+</script>
+</html>

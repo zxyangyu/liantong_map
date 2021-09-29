@@ -19,6 +19,24 @@
 ">
 <div id="main" style="width: 100%;height:900px;color: #333;z-index: 1;margin: 0;padding: 0;"></div>
 <div id="city" style="width: 100%;height:900px;color: #333;z-index: 99;display: None;margin: 0;padding: 0;"></div>
+<div class="map-table" style="
+    position:absolute;/*子盒子位置要用absolute*/
+    top: 60px;
+    left: 60px;
+    color:#fff;
+    background-color: rgba(256,256,256,0.1);
+z-index:100">
+    <table>
+        <thead>
+        <tr>
+            <th>地区(TOP8)</th>
+            <th>用户人数</th>
+        </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
 </body>
 <script>
     $().ready(function () {
@@ -56,6 +74,23 @@
                     reject(err);
                 }
             })
+        }
+
+        // 创建数据表
+        function tableList(data) {
+            var appendHTML = "";
+            var table = $(".map-table tbody tr")
+            if (table.length > 0) {
+                table.remove();
+            }
+            for (var i = 0; i < data.length && i < 8; i++) {
+                if (data[i].value !== 0) {
+                    appendHTML = "<tr><td>" +
+                        data[i].name + "</td><td>" +
+                        data[i].value + "</td></tr>";
+                    $(".map-table tbody").append(appendHTML);
+                }
+            }
         }
 
         var ali_map = 'https://geo.datav.aliyun.com/areas_v3/bound/'
@@ -115,7 +150,10 @@
                         '韶关市': '440200',
                         '广州市': '440100'
                     }
-
+                    // 数据排序
+                    agg.sort(function (a, b) {
+                        return b.zone_adcode - a.zone_adcode
+                    })
                     var convertJson = function (data, city) {
                         var res = [];
                         for (var i = 0; i < data.length; i++) {
@@ -129,30 +167,33 @@
                         console.log(res);
                         return res;
                     };
-                    var convertAggCity = function (data, type_column) {
+                    var convertAgg = function (data, type_column, select_city) {
                         var res = [];
-                        for (var i = 0; i < data.length; i++) {
-                            if (data[i].zone_name === null) {
-                                res.push({
-                                    name: data[i].city,
-                                    value: data[i][type_column]
-                                });
+                        if (select_city === "all") {
+                            for (var i = 0; i < data.length; i++) {
+                                if (data[i].zone_name === null) {
+                                    res.push({
+                                        name: data[i].city,
+                                        value: data[i][type_column]
+                                    });
+                                }
+                            }
+                        } else {
+                            for (var i = 0; i < data.length; i++) {
+                                if (data[i].zone_name !== null && data[i].city === select_city) {
+                                    res.push({
+                                        name: data[i].zone_name,
+                                        value: data[i][type_column]
+                                    });
+                                }
                             }
                         }
                         return res;
                     };
-                    var convertAggZone = function (data, type_column) {
-                        var res = [];
-                        for (var i = 0; i < data.length; i++) {
-                            if (data[i].zone_name !== null) {
-                                res.push({
-                                    name: data[i].zone_name,
-                                    value: data[i][type_column]
-                                });
-                            }
-                        }
-                        return res;
-                    }
+
+                    // 创建表格
+                    tableList(convertAgg(agg, "zone_adcode", 'all'))
+
                     chart.setOption({
                         backgroundColor: '#222831',
                         tooltip: {
@@ -173,7 +214,7 @@
                             itemWidth: 10,
                             itemHeight: 60,
                             inRange: {
-                                color: ['#5b6d6a', '#11999E', '#1cc7b0',],
+                                color: ['#04847e', '#00a79f', '#03ded7',],
                                 symbolSize: [200, 400],
                             },
                         },
@@ -200,7 +241,7 @@
                             itemStyle: {
                                 borderColor: '#EEEEEE',
                                 borderWidth: 1,
-                                areaColor: '#575f6c'
+                                areaColor: '#575f6c',
                             },
                             label: {
                                 normal: {
@@ -215,10 +256,11 @@
                                 emphasis: {
                                     fontSize: 14,
                                     fontFamily: "Microsoft YaHei",
-                                    show: true
+                                    show: true,
+                                    color: '#fff',
                                 }
                             },
-                            data: convertAggCity(agg, "zone_adcode")
+                            data: convertAgg(agg, "zone_adcode", "all")
                         }]
                     })
 
@@ -232,6 +274,8 @@
                         }
                         //选择地级市的单击事件
                         var selectCity = result.name;
+                        tableList(convertAgg(agg, "zone_adcode", selectCity))
+
                         //    调取后台数据
                         // $.get(cdn_url + + '_full.json', function (Citymap) {
                         jsonp('static/map/' + city_code_dict[selectCity] + '_full.json', {
@@ -243,19 +287,22 @@
                                 myChartCity = echarts.init(document.getElementById('city'));
                                 myChartCity.setOption({
                                     animation: false,
-                                    large: true,
-                                    backgroundColor: '#222831',
+                                    backgroundColor: {
+                                        type: 'radial',
+                                        x: 0.5,
+                                        y: 0.5,
+                                        r: 0.5,
+                                        colorStops: [{
+                                            offset: 0, color: '#054074' // 0% 处的颜色
+                                        }, {
+                                            // offset: 1, color: '#00064c' // 100% 处的颜色
+                                            offset: 1, color: '#04294b' // 100% 处的颜色
+                                        }],
+                                    },
                                     geo: {
                                         show: false,
                                         map: selectCity,
                                         roam: false,
-                                        itemStyle: {
-                                            // 普通状态下的样式
-                                            normal: {
-                                                areaColor: '#ABCDEF99',
-                                                borderColor: '#fff'
-                                            },
-                                        },
                                     },
                                     toolbox: {
                                         show: true,
@@ -272,6 +319,7 @@
                                                 onclick: function () {
                                                     $('#city').css('display', 'None');
                                                     $('#main').css('display', 'block');
+                                                    tableList(convertAgg(agg, "zone_adcode", 'all'))
                                                 }
                                             },
                                         },
@@ -298,40 +346,43 @@
                                         {
                                             type: 'map',
                                             map: selectCity,//要和echarts.registerMap（）中第一个参数一致
-                                            // geoIndex: 0,
                                             zoom: 1, //当前视角的缩放比例
                                             roam: false, //是否开启平游或缩放
-                                            data: convertAggZone(agg, "zone_adcode"),
+                                            data: convertAgg(agg, "zone_adcode", selectCity),
                                             itemStyle: {
                                                 normal: {
-                                                    areaColor: '#ABCDEF99',
-                                                    borderColor: '#fff'
-                                                },
+                                                    areaColor: '#000221',
+                                                    borderColor: '#656565',
+                                                }
                                             },
                                             label: {
                                                 normal: {
+                                                    textBorderColor: '#000000',
+                                                    textBorderWidth: 3,
                                                     show: true,
-                                                    color: '#fff',
-                                                    fontSize: 14,
+                                                    color: '#ffffff',
+                                                    fontSize: 16,
                                                     fontFamily: "Microsoft YaHei",
                                                     formatter: function (params) {
                                                         return params.name + "\n" + params.value;    //地图上展示文字 + 数值
                                                     },
                                                 },
                                                 emphasis: {
-                                                    fontSize: 14,
-                                                    fontFamily: "Microsoft YaHei",
-                                                    show: true
-                                                }
-                                            }
+                                                    show: false,
+                                                },
+                                            },
                                         },
                                         {
                                             name: 'shanshan',            // series名称
                                             type: 'scatter',          // series图表类型
-                                            silent:true,            // 不响应鼠标事件
+                                            // large: true,
+                                            zlevel: 99999,
+                                            // progressive :400,
+                                            silent: true,            // 不响应鼠标事件
                                             coordinateSystem: 'geo',  // series坐标系类型
-                                            blendMode: 'lighter',   // 叠加效果
-                                            symbolSize: 4,
+                                            // blendMode: 'lighter',   // 叠加效果
+                                            blendMode: 'darken',   // 叠加效果
+                                            symbolSize: 5,
                                             //Scatter才有这个属性,是否开启鼠标 hover 的提示动画效果
                                             hoverAnimation: false,
                                             // data: convertJson(json_data),  // series数据内容
@@ -340,11 +391,16 @@
                                             label: {
                                                 show: false
                                             },
-                                            //series样式
+                                            // series样式
                                             itemStyle: {
-                                                color: 'orange',
-                                                opacity: 0.5,
+                                                color: 'white',
+                                                opacity: 0.9,
+                                                shadowBlur: 15,
+                                                shadowColor: '#ffffff'
                                             },
+                                            // itemStyle: {
+                                            //     symbol: "data:image/svg+xml,%3Csvg width='6' height='6' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'%3E%3Cdefs%3E%3Cfilter x='-150%25' y='-150%25' width='400%25' height='400%25' filterUnits='objectBoundingBox' id='a'%3E%3CfeOffset in='SourceAlpha' result='shadowOffsetOuter1'/%3E%3CfeGaussianBlur stdDeviation='1' in='shadowOffsetOuter1' result='shadowBlurOuter1'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0.692934783 0 0 0 0 1 0 0 0 1 0' in='shadowBlurOuter1' result='shadowMatrixOuter1'/%3E%3CfeOffset in='SourceAlpha' result='shadowOffsetOuter2'/%3E%3CfeGaussianBlur stdDeviation='1' in='shadowOffsetOuter2' result='shadowBlurOuter2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0.694117647 0 0 0 0 1 0 0 0 1 0' in='shadowBlurOuter2' result='shadowMatrixOuter2'/%3E%3CfeMerge%3E%3CfeMergeNode in='shadowMatrixOuter1'/%3E%3CfeMergeNode in='shadowMatrixOuter2'/%3E%3C/feMerge%3E%3C/filter%3E%3Ccircle id='b' cx='3' cy='3' r='1'/%3E%3C/defs%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cuse fill='%23000' filter='url(%23a)' xlink:href='%23b'/%3E%3Cuse fill='%23FFF' xlink:href='%23b'/%3E%3C/g%3E%3C/svg%3E",
+                                            // },
                                             tooltip: {
                                                 trigger: 'item',
                                                 show: false
@@ -354,6 +410,7 @@
                                 }, true);
                             })
                     });
+
                 }).catch(err => {
                     alert(err)
                 })

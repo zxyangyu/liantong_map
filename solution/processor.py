@@ -354,7 +354,8 @@ city_code_dict = {
     "香港特别行政区": "810100",
     "澳门特别行政区": "820000"
 }
-code_city_dict ={  'CN-'+v[0:2]+'-'+v[2:4]: k for k, v in city_code_dict.items()}
+cn_code_city_dict ={'CN-' + v[0:2] + '-' + v[2:4]: k for k, v in city_code_dict.items()}
+code_city_dict ={v: k for k, v in city_code_dict.items()}
 def get_path_list(coordinates, geometry_type):
     path_list = []
 
@@ -393,7 +394,8 @@ all_data_frame['zone_name'] = all_data_frame.properties.apply(
     lambda x: x.get('name'))
 all_data_frame['zone_adcode'] = all_data_frame.properties.apply(
     lambda x: x.get('adcode'))
-
+all_data_frame['city']=all_data_frame.properties.apply(
+    lambda x: code_city_dict.get(str(x.get('parent').get('adcode'))))
 
 # 组装point 经纬度
 point_df['point'] = [[x, y] for x, y in zip(point_df.lng, point_df.lat)]
@@ -430,7 +432,7 @@ point_df['zone_adcode']=point_df['zone_adcode'].fillna('未知')
 # 映射中文
 point_df.loc[point_df['city']=='null', 'city'] = '未知'
 point_df.loc[point_df['province']=='null', 'province'] = '未知'
-point_df['city']=point_df.city.map(code_city_dict)
+point_df['city']=point_df.city.map(cn_code_city_dict)
 
 
 # 展示数据详情
@@ -439,8 +441,14 @@ point_df.to_csv('static/data/result.csv',index=False)
 # point_df.to_json('static/data/result.json',orient="records")
 agg_df1=point_df.groupby(["city","zone_name"]).agg({"flowsize": np.sum,"ucc_count": np.sum, "zone_adcode": np.size}).reset_index()
 agg_df2=point_df.groupby(["city"]).agg({"flowsize": np.sum,"ucc_count": np.sum, "zone_adcode": np.size}).reset_index()
-attach = pd.read_json('../data/attach.json')
-agg_df=pd.concat([agg_df1,agg_df2,attach])
+# 解决数据NAN问题,先创建广东省所有地区值为0的数据
+# attach = pd.read_json('../data/attach.json')
+attach=all_data_frame[['city','zone_name']]
+attach.loc[:,'city']=attach['city'].fillna(all_data_frame['zone_name'])
+attach.loc[:,'flowsize']=0
+attach.loc[:,'ucc_count']=0
+attach.loc[:,'zone_adcode']=0
+agg_df=pd.concat([agg_df1,agg_df2,attach,attach.drop(columns='zone_name').drop_duplicates()])
 agg_df.to_csv('static/data/result_agg.csv')
 # agg_df.to_json('static/data/result_agg.json',orient="records")
 with open('static/data/result.json','w+') as f:

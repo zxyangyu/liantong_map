@@ -39,7 +39,7 @@
         for (var i = 0; i < result_agg.length; i++) {
             if (result_agg[i].zone_name === null) {
                 x_city.push(result_agg[i].city)
-                city_values.push(result_agg[i].flowsize / 1024 / 1024 / 1024 / 8)
+                city_values.push((result_agg[i].flowsize / 1024 / 1024 / 1024 / 8).toFixed(2))
             }
         }
         chart.getZr().on('click', function (params) {
@@ -55,7 +55,7 @@
                             if (result_agg[i].city === xAxisName) {
                                 if (result_agg[i].zone_name !== null) {
                                     x_zone.push(result_agg[i].zone_name)
-                                    values.push(result_agg[i].flowsize / 1024 / 1024 / 1024 / 8)
+                                    values.push((result_agg[i].flowsize / 1024 / 1024 / 1024 / 8).toFixed(2))
                                 }
                             }
                         }
